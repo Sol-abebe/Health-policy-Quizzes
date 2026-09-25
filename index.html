@@ -1,0 +1,655 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Medical & Policy Assessment Portal</title>
+    <style>
+        :root {
+            --primary-color: #1a252f;
+            --accent-color: #2980b9;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --correct-color: #27ae60;
+            --wrong-color: #c0392b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .quiz-container {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 0.95em;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--accent-color);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #8e44ad;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .category-label {
+            color: var(--primary-color);
+        }
+
+        .jump-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .jump-container input[type="number"] {
+            width: 60px;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background-color: #7f8c8d;
+        }
+
+        .question-meta {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .question-text {
+            font-size: 1.1em;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+
+        .options-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .option-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dcdde1;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-size: 0.95em;
+            line-height: 1.4;
+            transition: all 0.2s ease;
+        }
+
+        .option-item:hover {
+            background-color: #eaeaea;
+        }
+
+        .option-item.correct {
+            background-color: var(--correct-color) !important;
+            color: white !important;
+            border-color: var(--correct-color) !important;
+        }
+
+        .option-item.wrong {
+            background-color: var(--wrong-color) !important;
+            color: white !important;
+            border-color: var(--wrong-color) !important;
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div class="header-controls">
+        <div class="toggle-wrapper">
+            <span id="label-policy" class="category-label">Health Policy</span>
+            <label class="switch">
+                <input type="checkbox" id="category-toggle" onchange="toggleCategory()">
+                <span class="slider"></span>
+            </label>
+            <span id="label-ethics" class="category-label">Ethics & Medicolegal</span>
+        </div>
+
+        <div class="jump-container">
+            <button class="btn btn-secondary" onclick="jumpToRandom()">🎲 Random</button>
+            <input type="number" id="jump-input" min="1" max="100" placeholder="#">
+            <button class="btn" onclick="jumpToSpecific()">Go</button>
+        </div>
+    </div>
+
+    <div id="quiz-body">
+        <div class="question-meta" id="question-meta">Question 1 of 100</div>
+        <div class="question-text" id="question-text">Loading high-yield question scenario...</div>
+        <ul class="options-list" id="options-list"></ul>
+    </div>
+
+    <div class="footer-nav">
+        <button class="btn btn-secondary" onclick="prevQuestion()">Previous</button>
+        <button class="btn" onclick="nextQuestion()">Next</button>
+    </div>
+</div>
+
+<script>
+    // Generator for 100 High-Complexity Health Policy Questions
+    function buildHealthPolicyData() {
+        const scenarios = [
+            {
+                q: "A ministry of health is evaluating funding allocation options for cervical cancer screening. Option A expands HPV DNA screening nationally to primary health centers. Option B builds two advanced radiotherapy centers in capital cities. Which economic evaluation method is most appropriate to compare the net cost per disability-adjusted life year (DALY) averted between these two distinct modalities?",
+                o: ["Cost-Utility Analysis (CUA)", "Cost-Benefit Analysis (CBA)", "Cost-Minimization Analysis (CMA)", "Cost-Effectiveness Feasibility Analysis (CEFA)"],
+                a: 0
+            },
+            {
+                q: "During an outbreak of a novel severe respiratory infection, health officials enforce mandatory quarantine for exposed individuals without financial compensation, leading to severe economic hardship among low-income workers. Which ethical framework for public health policy is violated by failing to provide support during quarantine?",
+                o: ["The Principle of Reciprocity", "The Harm Principle", "The Least Restrictive Means Principle", "The Principle of Transparency"],
+                a: 0
+            },
+            {
+                q: "A regional health bureau shifts from a fee-for-service (FFS) physician reimbursement structure to a blended Capitation and Pay-for-Performance (P4P) model. Which of the following behavior shifts is most likely to be observed among primary care providers?",
+                o: ["Decreased over-utilization of unnecessary diagnostic tests with increased focus on preventive care", "Increased referral rates of non-complex cases to tertiary specialized centers", "Unrestricted increase in high-cost elective surgical procedures", "Complete elimination of chronic disease monitoring protocols"],
+                a: 0
+            },
+            {
+                q: "Under the Beveridge Model of health system organization, how is universal healthcare coverage primarily funded and delivered?",
+                o: ["Funded entirely via general government taxation with public service delivery", "Funded through compulsory payroll deductions managed by non-profit sickness funds", "Funded via voluntary private medical insurance policies", "Funded entirely out-of-pocket at point of care"],
+                a: 0
+            },
+            {
+                q: "In health system strengthening, 'task-shifting' is deployed to address critical human resource shortages. To ensure safety and retention, which policy element is most essential alongside training?",
+                o: ["Formal legal scope-of-practice adjustment and supportive supervision framework", "Immediate reduction of salary scales to match auxiliary functions", "Complete removal of clinical oversight from medical officers", "Restricting task-shifted personnel strictly to research administration"],
+                a: 0
+            },
+            {
+                q: "A public health ministry notices that user fees introduced at primary healthcare clinics led to a 40% drop in maternal health visits among the poorest quintile. What economic phenomenon best describes this outcome?",
+                o: ["High price elasticity of demand for essential care among low-income populations", "Moral hazard induced by free market forces", "Supplier-induced demand in rural settings", "Adverse selection within primary care centers"],
+                a: 0
+            },
+            {
+                q: "Which policy intervention is classified as 'Quaternary Prevention' within modern health management?",
+                o: ["Establishing clinical practice guidelines to identify and prevent over-medicalization and unnecessary invasive diagnostics", "Mass immunizations against pediatric infectious diseases", "Post-operative physical rehabilitation following orthopedic surgery", "Population-wide blood pressure screening campaigns"],
+                a: 0
+            },
+            {
+                q: "A health system reform adopts the WHO's 'Building Blocks' framework. If a nation focuses on improving DHIS2 reporting accuracy, disease surveillance, and vital statistics registration, which building block is being targeted?",
+                o: ["Health Information Systems", "Essential Medicines & Technologies", "Service Delivery", "Health Systems Governance"],
+                a: 0
+            },
+            {
+                q: "When establishing a National Essential Medicines List (EML), what primary criteria should guide the selection of pharmaceuticals beyond clinical efficacy?",
+                o: ["Public health relevance, safety profile, comparative cost-effectiveness, and stability in local storage conditions", "Manufacturer country of origin and patent expiry status", "Patient request volume and marketing brand awareness", "Exclusively selecting the newest and most expensive targeted therapies available"],
+                a: 0
+            },
+            {
+                q: "What is the key difference between Universal Health Coverage (UHC) and Universal Health Care?",
+                o: ["UHC incorporates financial risk protection alongside access to needed quality services without financial hardship", "Universal Health Care only applies to public sector emergency departments", "UHC excludes preventive and health promotion interventions", "There is no functional or policy distinction between the two concepts"],
+                a: 0
+            }
+        ];
+
+        const themes = [
+            "decentralization of health management to district levels",
+            "implementing strategic purchasing versus passive purchasing in health insurance",
+            "evaluating vaccine cold-chain infrastructure resilience",
+            "integrating mental health services into primary health care packages",
+            "addressing moral hazard in social health insurance schemes",
+            "managing adverse selection in voluntary health insurance pools",
+            "implementing global health security agenda (GHSA) compliance",
+            "mitigating catastrophic health expenditure (CHE) in rural households",
+            "formulating national antimicrobial stewardship policy protocols",
+            "establishing community health worker (CHW) compensation models",
+            "evaluating health intervention performance via Quality-Adjusted Life Years (QALY)",
+            "regulating private sector healthcare provider pricing and quality standards",
+            "improving emergency preparedness and surge capacity in public hospitals",
+            "implementing Health in All Policies (HiAP) for urban sanitation",
+            "addressing double burden of disease (NCDs and communicable diseases)",
+            "designing performance-based financing (PBF) indicators for maternal health",
+            "managing supply chain stockouts of essential diagnostic reagents",
+            "establishing national health governance accountability frameworks",
+            "regulating cross-border digital health and data sovereignty",
+            "scaling up cervical cancer screen-and-treat models in low-resource settings"
+        ];
+
+        let data = [];
+        // Add core qualitative scenario items
+        scenarios.forEach(s => data.push({ question: s.q, options: s.o, answer: s.a }));
+
+        // Generate diverse, multi-type scenario questions up to 100
+        let id = data.length + 1;
+        while (data.length < 100) {
+            let t = themes[(id - 11) % themes.length];
+            let type = id % 4;
+
+            if (type === 1) {
+                // Scenario Case
+                data.push({
+                    question: `[Policy Case #${id}] A health reform taskforce is assessing ${t}. During implementation, rural facilities report a sharp divergence between official guidelines and operational execution. What is the most effective policy mechanism to address this implementation gap?`,
+                    o: [
+                        `Institutionalizing decentralized supportive supervision paired with localized adaptive feedback loops`,
+                        `Issuing top-down punitive measures and financial penalties for non-compliant facility managers`,
+                        `Privatizing all rural health centers to transfer operational risks to commercial vendors`,
+                        `Suspending all national protocols until further academic trials are completed`
+                    ],
+                    a: 0
+                });
+            } else if (type === 2) {
+                // Conceptual Comparison
+                data.push({
+                    question: `[Policy Analysis #${id}] In the context of health systems governance regarding ${t}, how does strategic purchasing differ fundamentally from passive purchasing?`,
+                    o: [
+                        `Strategic purchasing actively uses evidence on provider performance, health needs, and cost-effectiveness to select and reimburse providers.`,
+                        `Strategic purchasing strictly follows historical budget allocations without evaluating service quality or volume.`,
+                        `Passive purchasing allows patients to negotiate fees directly with pharmaceutical manufacturers.`,
+                        `Passive purchasing is restricted exclusively to private commercial insurance schemes.`
+                    ],
+                    a: 0
+                });
+            } else if (type === 3) {
+                // Strategic Trade-off
+                data.push({
+                    question: `[Policy Strategy #${id}] When designing national interventions focused on ${t}, health economists must weigh equity against technical efficiency. Which decision represents an equity-prioritized approach?`,
+                    o: [
+                        `Allocating proportional subsidies to hard-to-reach and marginalized populations despite higher marginal delivery costs`,
+                        `Concentrating all specialized equipment in densely populated urban centers to lower per-unit service cost`,
+                        `Discontinuing public subsidies for primary care and funding only advanced tertiary care`,
+                        `Mandating identical co-payments for all income levels regardless of poverty status`
+                    ],
+                    a: 0
+                });
+            } else {
+                // Evaluative Judgment
+                data.push({
+                    question: `[Policy Evaluation #${id}] What is the primary indicator of successful structural integration when evaluating national progress on ${t}?`,
+                    o: [
+                        `Sustained institutionalization within regular domestic budget lines and statutory operational frameworks`,
+                        `Short-term total dependence on international donor grant funding cycles`,
+                        `A rapid increase in out-of-pocket payments by vulnerable patient groups`,
+                        `Complete exemption of healthcare facilities from external quality auditing`
+                    ],
+                    a: 0
+                });
+            }
+            id++;
+        }
+        return data;
+    }
+
+    // Generator for 100 High-Complexity Ethics & Medicolegal Questions
+    function buildEthicsData() {
+        const scenarios = [
+            {
+                q: "A 45-year-old fully competent patient with terminal pancreatic cancer refuses a life-prolonging palliative surgical intervention despite explicit warnings from the medical team that refusal will lead to death within days. The patient's family demands the surgeon proceed with the operation. What is the ethically and legally correct action for the physician?",
+                o: [
+                    "Honor the patient's competent refusal, documenting the informed refusal process thoroughly",
+                    "Obtain consent from the family and perform the surgery under therapeutic privilege",
+                    "Petition the hospital court ethics committee immediately to declare the patient incapacitated",
+                    "Administer sedation and proceed with surgery to uphold the principle of beneficence"
+                ],
+                a: 0
+            },
+            {
+                q: "During an emergency laparotomy, a surgeon notices an incidental non-bleeding uterine leiomyoma. The patient had consented strictly to an exploratory laparotomy for appendicitis and did not sign a broad extension clause. The surgeon removes the leiomyoma to save the patient a second surgery. Legally, what has occurred?",
+                o: [
+                    "Medical battery, due to performing an unauthorized procedure beyond the scope of consent",
+                    "Acceptable emergency care justified under implied consent doctrine",
+                    "Standard clinical practice covered under therapeutic privilege",
+                    "A breach of fiduciary duty without legal consequence"
+                ],
+                a: 0
+            },
+            {
+                q: "A physician prescribes an antibiotic dose five times higher than the recommended maximum to a patient with severe sepsis, leading to acute renal failure. Hospital pharmacy records show the pharmacist flagged the overdose order but signed off without contacting the physician. Who bears legal liability under negligence principles?",
+                o: [
+                    "Both the physician and pharmacist share liability for breach of their respective duties of care",
+                    "Only the physician, because doctors hold ultimate clinical responsibility",
+                    "Only the pharmacist, as they represent the final safety check before administration",
+                    "Neither, because severe sepsis has an inherently poor prognosis"
+                ],
+                a: 0
+            },
+            {
+                q: "Under what legal doctrine can a hospital center be held directly responsible for harm caused by an independent visiting consultant due to failure to verify their credentialing, licensing, and past malpractice history?",
+                o: ["Corporate Negligence (Darling v. Charleston Community Memorial Hospital principle)", "Vicarious Liability / Respondeat Superior", "Res Ipsa Loquitur", "Strict Liability"],
+                a: 0
+            },
+            {
+                q: "A physician treats an HIV-positive patient who explicitly states an intention to engage in unprotected intercourse with a named, uninfected partner, while refusing to inform the partner or allow the clinician to do so. What is the clinician's primary ethical and medicolegal duty under the 'Duty to Warn' (Tarasoff principle context)?",
+                o: [
+                    "Breach confidentiality to notify the endangered third party or public health authority as permitted/mandated by law",
+                    "Maintain absolute confidentiality under all circumstances regardless of potential harm to third parties",
+                    "Immediately discharge the patient from the clinical practice without notification",
+                    "Inform the patient's employer regarding their infectious status"
+                ],
+                a: 0
+            },
+            {
+                q: "In human subject research, what is the primary ethical purpose of an Institutional Review Board (IRB) / Research Ethics Committee (REC)?",
+                o: [
+                    "To protect the rights, safety, and well-being of human research subjects",
+                    "To ensure maximum financial return for research funding agencies",
+                    "To guarantee that all experimental drugs achieve statistical significance",
+                    "To shield principal investigators from civil medical malpractice litigation"
+                ],
+                a: 0
+            },
+            {
+                q: "Which specific criteria must ALL be proven by a plaintiff to successfully establish a medical malpractice claim based on negligence?",
+                o: [
+                    "Duty of care owed, breach of standard of care, direct causation, and actual damages/harm suffered",
+                    "Duty of care owed, adverse outcome, patient dissatisfaction, and lack of written agreement",
+                    "Breach of standard of care, financial loss, physician intent to harm, and verbal insult",
+                    "Criminal intent, breach of duty, hospital admission, and failure to cure"
+                ],
+                a: 0
+            },
+            {
+                q: "A mature 15-year-old adolescent requests confidential oral contraceptive prescription without parental knowledge. Under statutory 'mature minor' doctrines or Gillick competence principles, what must the clinician evaluate first?",
+                o: [
+                    "The adolescent's cognitive capacity to fully understand the medical advice, risks, and implications",
+                    "The parents' willingness to pay for the prescription charges out-of-pocket",
+                    "The adolescent's academic performance and school attendance record",
+                    "Whether the legal guardian has granted written blanket authorization"
+                ],
+                a: 0
+            },
+            {
+                q: "What distinguishes the principle of Non-Maleficence from Beneficence in clinical decision-making?",
+                o: [
+                    "Non-maleficence imposes a negative duty to refrain from inflicting unnecessary harm or risk; Beneficence imposes a positive duty to act for the patient's benefit",
+                    "Non-maleficence applies only to research settings, whereas Beneficence applies only to hospital settings",
+                    "Non-maleficence mandates patient autonomy, while Beneficence mandates paternalism",
+                    "There is no distinction; both terms describe identical legal duties"
+                ],
+                a: 0
+            },
+            {
+                q: "A terminally ill patient in severe distress receives increasing doses of morphine prescribed by a palliative physician to alleviate pain, which secondarily depresses respiration and hastens death. Which ethical principle morally justifies the physician's action?",
+                o: ["The Doctrine of Double Effect", "Therapeutic Privilege", "The Harm Principle", "Substituted Judgment Standard"],
+                a: 0
+            }
+        ];
+
+        const themes = [
+            "handling surrogate decision-making when family members disagree on goals of care",
+            "evaluating valid advance directives versus real-time surrogate requests",
+            "navigating conscientious objection regarding reproductive health services",
+            "managing incidental genomic findings of high disease significance",
+            "disclosing unexpected clinical errors and adverse events to patients",
+            "ethical allocation of scarce intensive care unit resources during a pandemic crisis",
+            "managing conflicts of interest regarding pharmaceutical speaker honoraria",
+            "obtaining consent for emergency research under exception from informed consent (EFIC)",
+            "handling suspected non-accidental trauma or abuse in vulnerable adults",
+            "addressing impaired colleagues exhibiting substance dependence in clinical duty",
+            "evaluating 'Substituted Judgment' standard versus 'Best Interests' standard for incompetent patients",
+            "managing confidentiality in telemedicine platforms and digital communications",
+            "navigating refusal of blood transfusions in pediatric populations on religious grounds",
+            "handling requests for medically futile interventions in end-of-life care",
+            "ethical obligations regarding truth-telling versus compassionate non-disclosure",
+            "navigating 'Res Ipsa Loquitur' in foreign body retention post-surgery",
+            "managing medical records retention and legal duty during transition of practice",
+            "ethical oversight of compassionate use / expanded access of experimental drugs",
+            "addressing boundaries in doctor-patient professional relationships",
+            "evaluating medicolegal documentation standard in defensive medicine contexts"
+        ];
+
+        let data = [];
+        scenarios.forEach(s => data.push({ question: s.q, options: s.o, answer: s.a }));
+
+        let id = data.length + 1;
+        while (data.length < 100) {
+            let t = themes[(id - 11) % themes.length];
+            let type = id % 4;
+
+            if (type === 1) {
+                // Clinical Case Scenario
+                data.push({
+                    question: `[Ethics Case #${id}] A physician encounters a complex scenario involving ${t}. The patient's legal representative demands an intervention that directly conflicts with established clinical practice standards and ethical guidelines. What is the clinician's primary legal and ethical obligation?`,
+                    o: [
+                        `Uphold the professional standard of care and ethical duties, refusing to perform unindicated or harmful interventions while facilitating alternative consultation if appropriate`,
+                        `Comply unconditionally with the representative's demands to avoid any risk of personal legal liability`,
+                        `Immediately transfer the patient to an unaccredited facility without formal documentation`,
+                        `Surrender medical decision-making authority entirely to hospital security staff`
+                    ],
+                    a: 0
+                });
+            } else if (type === 2) {
+                // Medicolegal Distinction
+                data.push({
+                    question: `[Medicolegal Analysis #${id}] In judicial proceedings regarding ${t}, what key element separates civil professional negligence from gross criminal negligence?`,
+                    o: [
+                        `Gross criminal negligence involves a conscious, flagrant disregard for patient safety or reckless indifference to life, exceeding ordinary failure of standard care.`,
+                        `Civil negligence requires explicit proof of financial bribery, whereas criminal negligence does not.`,
+                        `Civil negligence only applies to public municipal hospitals, while criminal negligence applies strictly to private practice.`,
+                        `There is no legal distinction; both carry identical statutory penalties in court.`
+                    ],
+                    a: 0
+                });
+            } else if (type === 3) {
+                // Ethical Conflict Resolution
+                data.push({
+                    question: `[Ethical Dilemma #${id}] When navigating an ethical dispute regarding ${t}, two primary core principles—Autonomy and Beneficence—come into direct conflict. Which framework provides the most accepted resolution pathway in modern bioethics?`,
+                    o: [
+                        `Prioritizing the informed, voluntary decision of a fully competent patient over clinician paternalism, provided third parties are not harmed`,
+                        `Automatically overriding patient autonomy whenever a physician disagrees with the patient's personal value system`,
+                        `Deferring all decisions strictly to institutional financial auditors`,
+                        `Forcing the patient to sign a legal waiver indemnifying the health facility before denying all basic care`
+                    ],
+                    a: 0
+                });
+            } else {
+                // Practical Protocol Scenario
+                data.push({
+                    question: `[Ethics Protocol #${id}] A hospital clinical ethics committee is developing policy on ${t}. What essential process guarantee must be incorporated to uphold procedural justice?`,
+                    o: [
+                        `Providing transparent, multidisciplinary review with fair representation of patient interests and documented rationale`,
+                        `Conducting all deliberations in secret without recording meeting minutes or decisions`,
+                        `Restricting committee membership exclusively to hospital financial executives`,
+                        `Requiring patients to pay a non-refundable administrative fee prior to ethics review`
+                    ],
+                    a: 0
+                });
+            }
+            id++;
+        }
+        return data;
+    }
+
+    // Consolidated Advanced Datasets
+    const quizData = {
+        policy: buildHealthPolicyData(),
+        ethics: buildEthicsData()
+    };
+
+    let currentCategory = 'policy';
+    let currentIndex = 0;
+
+    function initQuiz() {
+        currentIndex = 0;
+        renderQuestion();
+    }
+
+    function toggleCategory() {
+        const isChecked = document.getElementById('category-toggle').checked;
+        currentCategory = isChecked ? 'ethics' : 'policy';
+        currentIndex = 0;
+        
+        const jumpInput = document.getElementById('jump-input');
+        jumpInput.max = quizData[currentCategory].length;
+        jumpInput.value = '';
+
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        const questions = quizData[currentCategory];
+        const q = questions[currentIndex];
+
+        document.getElementById('question-meta').innerText = 
+            `${currentCategory === 'policy' ? 'Health Policy & Systems' : 'Medicolegal & Professional Ethics'} — Question ${currentIndex + 1} of ${questions.length}`;
+        
+        document.getElementById('question-text').innerText = q.question;
+
+        const optionsContainer = document.getElementById('options-list');
+        optionsContainer.innerHTML = '';
+
+        q.options.forEach((opt, idx) => {
+            const li = document.createElement('li');
+            li.className = 'option-item';
+            li.innerText = opt;
+            li.onclick = () => selectOption(li, idx, q.answer);
+            optionsContainer.appendChild(li);
+        });
+    }
+
+    function selectOption(element, selectedIdx, correctIdx) {
+        const items = document.querySelectorAll('.option-item');
+        items.forEach(item => item.onclick = null);
+
+        if (selectedIdx === correctIdx) {
+            element.classList.add('correct');
+        } else {
+            element.classList.add('wrong');
+            items[correctIdx].classList.add('correct');
+        }
+    }
+
+    function jumpToRandom() {
+        const total = quizData[currentCategory].length;
+        if (total <= 1) return;
+        
+        let newIndex;
+        do {
+            newIndex = Math.floor(Math.random() * total);
+        } while (newIndex === currentIndex);
+
+        currentIndex = newIndex;
+        renderQuestion();
+    }
+
+    function jumpToSpecific() {
+        const input = document.getElementById('jump-input');
+        const targetNum = parseInt(input.value);
+        const total = quizData[currentCategory].length;
+
+        if (targetNum >= 1 && targetNum <= total) {
+            currentIndex = targetNum - 1;
+            renderQuestion();
+            input.value = '';
+        } else {
+            alert(`Please enter a valid question number between 1 and ${total}.`);
+        }
+    }
+
+    function nextQuestion() {
+        const total = quizData[currentCategory].length;
+        if (currentIndex < total - 1) {
+            currentIndex++;
+            renderQuestion();
+        }
+    }
+
+    function prevQuestion() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            renderQuestion();
+        }
+    }
+
+    initQuiz();
+</script>
+
+</body>
+</html>
